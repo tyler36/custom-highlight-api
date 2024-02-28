@@ -1,0 +1,202 @@
+
+
+<script src="https://prismjs.com/prism.js" data-manual></script>
+
+<h1>Syntax highlighting code blocks with Prism and the <a href="https://drafts.csswg.org/css-highlight-api/"
+    target="_top">Custom Highlight API</a></h1>
+
+<h2><a href="https://www.bram.us/2024/02/18/custom-highlight-api-for-syntax-highlighting/">Original article</a></h2>
+
+<div class="warning">
+  <p>Your browser does not support the Custom Highlight API. Please try Chrome 105+, Safari 17.2+, or Firefox Nightly
+  </p>
+</div>
+
+<p>What if I told you can syntax highlight code snippets without needing to overload the DOM with a ton of
+  <code>&lt;span&gt;</code> elements wrapping each token in order to colorize them?</p>
+
+<h2>Howto</h2>
+
+<h3>Step 1: Declare your syntax highlighting color scheme</h3>
+
+<p>The format is <code>::highlight(x)</code> where <code>x</code> is the type of token.</p>
+
+<style visible>
+  /* From prism.css */
+  ::highlight(parameter) {
+    color: #1a1a1a;
+  }
+
+  ::highlight(comment),
+  ::highlight(prolog),
+  ::highlight(doctype),
+  ::highlight(cdata) {
+    color: slategray;
+  }
+
+  ::highlight(punctuation) {
+    color: #999;
+  }
+
+  ::highlight(property),
+  ::highlight(tag),
+  ::highlight(boolean),
+  ::highlight(number),
+  ::highlight(constant),
+  ::highlight(symbol),
+  ::highlight(deleted),
+  ::highlight(class-name) {
+    color: #905;
+  }
+
+  ::highlight(selector),
+  ::highlight(attr-name),
+  ::highlight(string),
+  ::highlight(char),
+  ::highlight(builtin),
+  ::highlight(inserted) {
+    color: #690;
+  }
+
+  ::highlight(operator),
+  ::highlight(entity),
+  ::highlight(url) {
+    color: #a67f59;
+    background: hsla(0, 0%, 100%, 0.5);
+  }
+
+  ::highlight(atrule),
+  ::highlight(attr-value),
+  ::highlight(keyword) {
+    color: #07a;
+  }
+
+  ::highlight(function) {
+    color: #dd4a68;
+  }
+
+  ::highlight(regex),
+  ::highlight(important),
+  ::highlight(variable) {
+    color: #e90;
+  }
+
+  ::highlight(important),
+  ::highlight(bold) {
+    font-weight: bold;
+  }
+
+  ::highlight(italic) {
+    font-style: italic;
+  }
+
+  ::highlight(entity) {
+    cursor: help;
+  }
+</style>
+
+<h3>Step 2: Register all token types as highlight styles</h3>
+<script type="module" visible>if (CSS.highlights) {
+    const tokenTypes = ['comment', 'prolog', 'doctype', 'cdata', 'punctuation', 'namespace',
+      'property', 'tag', 'boolean', 'number', 'constant', 'symbol', 'deleted',
+      'selector', 'attr', 'string', 'char', 'builtin', 'inserted', 'operator',
+      'entity', 'url', 'string', 'atrule', 'attr', 'keyword', 'function', 'class',
+      'regex', 'important', 'variable', 'important', 'bold', 'italic', 'entity',
+      'parameter', 'class-name'];
+
+    tokenTypes.forEach(tokenType => {
+      CSS.highlights.set(tokenType, new Highlight());
+    });
+  }</script>
+
+<h3>Step 3: Tokenize the source code and register them with the highlights</h3>
+<script type="module" visible>if (CSS.highlights) {
+    const codeBlocks = document.querySelectorAll('script[visible], style[visible]');
+
+    for (const codeBlock of codeBlocks) {
+      // Tokenize it
+      let tokens = Prism.tokenize(
+        codeBlock.innerText,
+        codeBlock.tagName == 'STYLE' ? Prism.languages.css : Prism.languages.javascript
+      );
+
+      // Loop all tokens and highlight them based on their type
+      let pos = 0;
+      for (const token of tokens) {
+        if (token.type) {
+          const range = new Range();
+          range.setStart(codeBlock.firstChild, pos);
+          range.setEnd(codeBlock.firstChild, pos + token.length);
+          CSS.highlights.get(token.alias ?? token.type)?.add(range);
+        }
+        pos += token.length;
+      }
+    }
+  }</script>
+
+<h2>Demo</h2>
+
+<p>This page acts as its own demo: the CSS and JavaScript you see here is the actual code that gets executed and thereby
+  syntax highlighted.</p>
+
+<h2>Need more info?</h2>
+
+<p>Go read <a href="https://brm.us/syntax-highlighting" target="_top">https://brm.us/syntax-highlighting</a> which hold
+  a full write-up on this (and more)</p>
+
+<style>
+    script[visible],
+    style[visible],
+    pre {
+      display: block;
+      white-space: pre;
+      border: 1px solid #dedede;
+      padding: 1em;
+      background: #fafafa;
+      font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas,
+        Liberation Mono, monospace;
+      overflow-x: auto;
+      border-left: 0.4em solid cornflowerblue;
+      tab-size: 2;
+      color: #1a1a1a;
+      line-height: 1.6;
+    }
+
+        code:not(pre code), /* output:not(code:has(output) output) */ {
+      background: #f7f7f7;
+      border: 1px solid rgb(0 0 0 / 0.2);
+      padding: 0.1rem 0.3rem;
+      margin: 0.1rem 0;
+      border-radius: 0.2rem;
+      display: inline-block;
+    }
+        .warning {
+      display: none;
+      box-sizing: border-box;
+      padding: 1em;
+      margin: 1em 0;
+      border: 1px solid #ccc;
+      background: rgba(255 255 205 / 0.8);
+    }
+
+    .warning > :first-child {
+      margin-top: 0;
+    }
+
+    .warning > :last-child {
+      margin-bottom: 0;
+    }
+
+    .warning a {
+      color: blue;
+    }
+    .warning--info {
+      border: 1px solid #123456;
+      background: rgb(205 230 255 / 0.8);
+    }
+    .warning--alarm {
+      border: 1px solid red;
+      background: #ff000010;
+    }
+
+</style>
